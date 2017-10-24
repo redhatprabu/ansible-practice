@@ -1,0 +1,150 @@
+NOTE: These exercises can be completed on Linux Academy Lab Servers with any distribution and version available AS LONG AS the Ansible application has been installed and the 'user' user has been set up with SSH Key Exchange for password less SSH sessions (see previous lab for setup). 
+1. Verify that your ansible installation is available by displaying the version of ansible while logged in as the 'user' user.
+2. Run the ansible command that lists all of the hosts configured in your control server 'hosts' file for the system.
+3. Create a playbook, using the the 'outline' created in our previous exercise
+4. Run the playbook using the 'dry run' command and display the results
+
+
+Solution : 
+
+
+1. Verify that your ansible installation is available by displaying the version of ansible while logged in as the 'user' user.
+[test@tcox3 ~]$ ansible --version
+ansible 1.9.2
+  configured module search path = None
+ 
+2. Run the ansible command that lists all of the hosts configured in your control server 'hosts' file for the system.
+[test@tcox3 ~]$ ansible all --list-hosts
+    tcox5.mylabserver.com
+    localhost
+    tcox4.mylabserver.com
+ 
+3. Create a playbook, using the the 'outline' created in our previous exercise
+[test@tcox3 Outline]$ vim webserver.yml 
+[test@tcox3 Outline]$ cat webserver.yml 
+--- # Outline to Playbook Translation
+- hosts: apacheweb
+  user: test
+  sudo: yes
+  gather_facts: no
+  tasks:
+  - name: date/time stamp for when the playbook starts
+    command: /usr/bin/date
+    register: timestamp_start
+  - debug: var=timestamp_start
+  - name: install the apache web server
+    yum: pkg=httpd state=latest
+    notify: Start HTTPD
+  - name: verify that the web service is running
+    command: systemctl status httpd
+    register: result
+    ignore_errors: yes
+  - debug: var=result
+  - name: install client software - telnet
+    yum: pkg=telnet state=latest
+  - name: install client software - lynx
+    yum: pkg=lynx state=latest
+  - name: log all the packages install on the system
+    command: yum list installed
+    register: installed_result
+  - debug: var=installed_result
+  - name: date/time stamp for when the playbook ends
+    command: /usr/bin/date
+    register: timestamp_end
+  - debug: var=timestamp_end
+  handlers:
+  - name: Start HTTPD
+    service: name=httpd state=restarted
+4. Run the playbook using the 'dry run' command and display the results
+[test@tcox3 Outline]$ ansible-playbook webserver.yml --check
+
+PLAY [apacheweb] ************************************************************** 
+
+TASK: [date/time stamp for when the playbook starts] ************************** 
+skipping: [tcox4.mylabserver.com]
+ok: [tcox4.mylabserver.com]
+
+TASK: [debug var=timestamp_start] ********************************************* 
+ok: [tcox4.mylabserver.com] => {
+    "var": {
+        "timestamp_start": {
+            "invocation": {
+                "module_args": "/usr/bin/date", 
+                "module_name": "command"
+            }, 
+            "msg": "check mode not supported for command", 
+            "skipped": true
+        }
+    }
+}
+
+TASK: [install the apache web server] ***************************************** 
+changed: [tcox4.mylabserver.com]
+
+TASK: [verify that the web service is running] ******************************** 
+skipping: [tcox4.mylabserver.com]
+ok: [tcox4.mylabserver.com]
+
+TASK: [debug var=result] ****************************************************** 
+ok: [tcox4.mylabserver.com] => {
+    "var": {
+        "result": {
+            "invocation": {
+                "module_args": "systemctl status httpd", 
+                "module_name": "command"
+            }, 
+            "msg": "check mode not supported for command", 
+            "skipped": true
+        }
+    }
+}
+
+TASK: [install client software - telnet] ************************************** 
+changed: [tcox4.mylabserver.com]
+
+TASK: [install client software - lynx] **************************************** 
+changed: [tcox4.mylabserver.com]
+
+TASK: [log all the packages install on the system] **************************** 
+skipping: [tcox4.mylabserver.com]
+ok: [tcox4.mylabserver.com]
+
+TASK: [debug var=installed_result] ******************************************** 
+ok: [tcox4.mylabserver.com] => {
+    "var": {
+        "installed_result": {
+            "invocation": {
+                "module_args": "yum list installed", 
+                "module_name": "command"
+            }, 
+            "msg": "check mode not supported for command", 
+            "skipped": true
+        }
+    }
+}
+
+TASK: [date/time stamp for when the playbook ends] **************************** 
+skipping: [tcox4.mylabserver.com]
+ok: [tcox4.mylabserver.com]
+
+TASK: [debug var=timestamp_end] *********************************************** 
+ok: [tcox4.mylabserver.com] => {
+    "var": {
+        "timestamp_end": {
+            "invocation": {
+                "module_args": "/usr/bin/date", 
+                "module_name": "command"
+            }, 
+            "msg": "check mode not supported for command", 
+            "skipped": true
+        }
+    }
+}
+
+NOTIFIED: [Start HTTPD] ******************************************************* 
+changed: [tcox4.mylabserver.com]
+
+PLAY RECAP ******************************************************************** 
+tcox4.mylabserver.com      : ok=8    changed=4    unreachable=0    failed=0
+
+
